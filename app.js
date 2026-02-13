@@ -3,15 +3,11 @@ const uploadInput = document.getElementById('uploadImage');
 const resultDiv = document.getElementById('result');
 const predictButton = document.getElementById('predictBtn');
 
-predictButton.disabled = true;
-resultDiv.innerHTML = 'Модель загружается...';
-
-// Загружаем лёгкую версию MobileNet
+// Загрузка предобученной модели
 let model;
-mobilenet.load({version:1, alpha:0.25}).then(loadedModel => {
+mobilenet.load().then(loadedModel => {
     model = loadedModel;
-    resultDiv.innerHTML = 'Модель загружена ✅. Теперь можно распознавать изображения.';
-    predictButton.disabled = false;
+    console.log('Модель успешно загружена');
 });
 
 // Обработка загрузки изображения
@@ -27,28 +23,22 @@ uploadInput.addEventListener('change', event => {
 
 // Предсказание класса
 predictButton.addEventListener('click', async () => {
-    if (!model) return; // кнопка уже заблокирована, так что можно просто return
-
-    resultDiv.innerHTML = 'Идёт распознавание...';
+    if (!model) {
+        alert('Модель еще не загружена. Подождите.');
+        return;
+    }
 
     // Подготовка изображения
-    const tfImg = tf.browser.fromPixels(imageElement)
-        .resizeBilinear([224, 224])
-        .expandDims()
-        .toFloat()
-        .div(tf.scalar(127))
-        .sub(tf.scalar(1)); // нормализация, ускоряет точность
-
+    const tfImg = tf.browser.fromPixels(imageElement).resizeBilinear([224, 224]).expandDims();
+    
     // Классификация
     const predictions = await model.classify(tfImg);
-
+    
     // Отображение результатов
     resultDiv.innerHTML = '';
-    predictions.slice(0, 3).forEach(prediction => { // показываем топ-3
+    predictions.forEach(prediction => {
         const p = document.createElement('p');
         p.innerText = `${prediction.className}: ${(prediction.probability * 100).toFixed(2)}%`;
         resultDiv.appendChild(p);
     });
 });
-
-
